@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/utils/firebase-admin';
 import { Digest } from '@/types/digest';
 
 const CLOUD_FUNCTION_URL = "https://us-central1-ai-app-mvp-project.cloudfunctions.net/search";
@@ -24,12 +23,13 @@ async function fetchClipIdsFromCloudFunction(query: string, top_k: string, alpha
 }
 
 async function fetchClipsFromFirestore(clipIds: string[]): Promise<Digest[]> {
+    const { db } = await import('@/utils/firebase-admin');
     const clipsRef = db.collection('clips_dev_0612');
     const clipPromises = clipIds.map(id => clipsRef.doc(id).get());
     const clipDocs = await Promise.all(clipPromises);
 
     return clipDocs
-        .filter(doc => doc.exists) // Filter out non-existing documents
+        .filter(doc => doc.exists)
         .map(doc => {
             const data = doc.data();
             return {
@@ -48,7 +48,7 @@ async function fetchClipsFromFirestore(clipIds: string[]): Promise<Digest[]> {
                 podcastShowThumbnailFirebaseUrl: data?.podcastShowThumbnailFirebaseUrl,
                 podcastShowTitle: data?.podcastShowTitle,
                 podcastShowId: data?.podcastShowId,
-                indexed_timestamp: data?.productionDetails?.clipProductionDetails?.clipping_timestamp?.toDate().toISOString(),
+                indexed_timestamp: data?.productionDetails?.clipProductionDetails?.clipping_timestamp?.toDate?.()?.toISOString(),
             };
         });
 }
