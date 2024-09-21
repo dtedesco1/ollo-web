@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button"
 import { Digest } from "@/types/digest"
 import { fetchClips } from "@/utils/fetchClips"
 import { saveAs } from 'file-saver';
+import Image from 'next/image';
 
 export function SearchComponent() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -187,7 +188,7 @@ export function SearchComponent() {
             className="flex items-start gap-4 bg-muted rounded-lg p-4 hover:bg-accent hover:text-accent-foreground transition-colors cursor-pointer"
             onClick={() => handlePlay(clip)}
           >
-            <img
+            <Image
               src={clip.podcastShowThumbnailFirebaseUrl || "/placeholder.svg"}
               alt={clip.clipTitle}
               width={80}
@@ -206,7 +207,7 @@ export function SearchComponent() {
       {currentlyPlaying && (
         <div className="fixed bottom-0 left-0 w-full bg-muted p-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <img
+            <Image
               src={currentlyPlaying.podcastShowThumbnailFirebaseUrl || "/placeholder.svg"}
               alt={currentlyPlaying.clipTitle}
               width={50}
