@@ -13,5 +13,6 @@ export type Digest = {
     podcastShowThumbnailColors: string[];
     podcastShowThumbnailFirebaseUrl: string;
     podcastShowTitle: string;
+    podcastShowId: string;
     indexed_timestamp?: string;
 };

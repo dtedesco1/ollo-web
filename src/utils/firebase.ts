@@ -1,1 +1,0 @@
-// This file can be removed if you're not using Firebase in other parts of your app
