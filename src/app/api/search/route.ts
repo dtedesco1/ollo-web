@@ -1,56 +1,88 @@
 import { NextResponse } from 'next/server';
 import { Digest } from '@/types/digest';
+import { FirebaseError } from 'firebase/app';
 
 const CLOUD_FUNCTION_URL = "https://us-central1-ai-app-mvp-project.cloudfunctions.net/search";
 
+class CloudFunctionError extends Error {
+    constructor(message: string) {
+        super(message);
+        this.name = "CloudFunctionError";
+    }
+}
+
 async function fetchClipIdsFromCloudFunction(query: string, top_k: string, alpha: string): Promise<string[]> {
-    const response = await fetch(CLOUD_FUNCTION_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query, top_k, alpha })
-    });
+    try {
+        const response = await fetch(CLOUD_FUNCTION_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query, top_k, alpha })
+        });
 
-    if (!response.ok) {
-        throw new Error(`Cloud Function Error: ${response.status}`);
+        if (!response.ok) {
+            throw new CloudFunctionError(`HTTP error! status: ${response.status}`);
+        }
+
+        const clipIds = await response.json();
+        if (!Array.isArray(clipIds)) {
+            throw new CloudFunctionError('Invalid response from Cloud Function');
+        }
+
+        return clipIds;
+    } catch (error) {
+        console.error('Error in fetchClipIdsFromCloudFunction:', error);
+        throw error;
     }
-
-    const clipIds = await response.json();
-    if (!Array.isArray(clipIds)) {
-        throw new Error('Invalid response from Cloud Function');
-    }
-
-    return clipIds;
 }
 
 async function fetchClipsFromFirestore(clipIds: string[]): Promise<Digest[]> {
-    const { db } = await import('@/utils/firebase-admin');
-    const clipsRef = db.collection('clips_dev_0612');
-    const clipPromises = clipIds.map(id => clipsRef.doc(id).get());
-    const clipDocs = await Promise.all(clipPromises);
+    try {
+        const { db } = await import('@/utils/firebase-admin');
+        const clipsRef = db.collection('clips_dev_0612');
 
-    return clipDocs
-        .filter(doc => doc.exists)
-        .map(doc => {
-            const data = doc.data();
-            return {
-                clipId: doc.id,
-                clipSummary: data?.clipSummary,
-                clipTitle: data?.clipTitle,
-                clipTranscript: data?.clipTranscript,
-                episodeAudioGsUrl: data?.episodeAudioGsUrl,
-                episodeId: data?.episodeId,
-                episodeTitle: data?.episodeTitle,
-                episodeStartIndex: data?.episodeStartIndex,
-                firebaseAudioStoragePath: data?.firebaseAudioStoragePath,
-                firebaseAudioTokenUrl: data?.firebaseAudioTokenUrl,
-                indexed: data?.indexed,
-                podcastShowThumbnailColors: data?.podcastShowThumbnailColors,
-                podcastShowThumbnailFirebaseUrl: data?.podcastShowThumbnailFirebaseUrl,
-                podcastShowTitle: data?.podcastShowTitle,
-                podcastShowId: data?.podcastShowId,
-                indexed_timestamp: data?.productionDetails?.clipProductionDetails?.clipping_timestamp?.toDate?.()?.toISOString(),
-            };
+        const clipPromises = clipIds.map(async (id) => {
+            try {
+                console.log(`Fetching document with ID: ${id}`);
+                const doc = await clipsRef.doc(id).get();
+                console.log(`Document fetched successfully: ${id}`);
+                return doc;
+            } catch (error) {
+                console.error(`Error fetching document with ID: ${id}`, error);
+                throw error; // Re-throw to catch in the main try-catch block
+            }
         });
+
+        const clipDocs = await Promise.all(clipPromises);
+
+        return clipDocs
+            .filter(doc => doc.exists)
+            .map(doc => {
+                const data = doc.data();
+                return {
+                    clipId: doc.id,
+                    clipSummary: data?.clipSummary,
+                    clipTitle: data?.clipTitle,
+                    clipTranscript: data?.clipTranscript,
+                    episodeAudioGsUrl: data?.episodeAudioGsUrl,
+                    episodeId: data?.episodeId,
+                    episodeTitle: data?.episodeTitle,
+                    episodeStartIndex: data?.episodeStartIndex,
+                    firebaseAudioStoragePath: data?.firebaseAudioStoragePath,
+                    firebaseAudioTokenUrl: data?.firebaseAudioTokenUrl,
+                    indexed: data?.indexed,
+                    podcastShowThumbnailColors: data?.podcastShowThumbnailColors,
+                    podcastShowThumbnailFirebaseUrl: data?.podcastShowThumbnailFirebaseUrl,
+                    podcastShowTitle: data?.podcastShowTitle,
+                    podcastShowId: data?.podcastShowId,
+                    indexed_timestamp: data?.productionDetails?.clipProductionDetails?.clipping_timestamp?.toDate?.()?.toISOString(),
+                };
+            });
+    } catch (error) {
+        console.error('Error in fetchClipsFromFirestore:', error);
+        console.error('Error details:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+        console.error('Clip IDs:', clipIds);
+        throw error;
+    }
 }
 
 export async function POST(request: Request) {
@@ -61,6 +93,10 @@ export async function POST(request: Request) {
         const clipIds = await fetchClipIdsFromCloudFunction(query, top_k, alpha);
         console.log('Received clip IDs:', clipIds);
 
+        if (!clipIds || clipIds.length === 0) {
+            throw new Error('No clip IDs received from Cloud Function.');
+        }
+
         console.log('Fetching clips from Firestore');
         const clips = await fetchClipsFromFirestore(clipIds);
         console.log('Fetched clips:', clips.length);
@@ -68,6 +104,13 @@ export async function POST(request: Request) {
         return NextResponse.json(clips);
     } catch (error) {
         console.error('Error in search API:', error);
-        return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
+
+        if (error instanceof CloudFunctionError) {
+            return NextResponse.json({ error: 'Cloud Function execution failed.' }, { status: 500 });
+        } else if (error instanceof FirebaseError) {
+            return NextResponse.json({ error: 'Firestore query failed.' }, { status: 500 });
+        } else {
+            return NextResponse.json({ error: 'An unexpected error occurred.' }, { status: 500 });
+        }
     }
 }
