@@ -7,7 +7,7 @@ export function Header() {
             <div className="max-w-6xl mx-auto flex items-center">
                 <Link href="/" className="flex items-center space-x-2">
                     <Image src="/appIcon.png" alt="OllO Logo" width={60} height={60} />
-                    <span className="text-xl font-bold">Web 1.0</span>
+                    <span className="text-xl font-bold">Web 0.1.0</span>
                 </Link>
             </div>
         </header>
