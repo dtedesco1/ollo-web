@@ -3,6 +3,7 @@ import { getFirestore } from 'firebase-admin/firestore';
 import * as fs from 'fs';
 import * as path from 'path';
 import { ServiceAccount } from 'firebase-admin/app';
+import admin from 'firebase-admin';
 
 let serviceAccount: Partial<ServiceAccount> & { project_id?: string };
 let db: FirebaseFirestore.Firestore;
@@ -21,20 +22,17 @@ try {
         }
     } else {
         console.log('Loading Firebase credentials from environment variables');
-        // Check for minimum required environment variables
-        const projectId = process.env.FIREBASE_PROJECT_ID;
-        const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
-        const privateKey = process.env.FIREBASE_PRIVATE_KEY;
-
-        if (!projectId || !clientEmail || !privateKey) {
-            throw new Error('Missing required Firebase environment variables');
+        const credentials = process.env.FIREBASE_CREDENTIALS;
+        if (!credentials) {
+            throw new Error('FIREBASE_CREDENTIALS environment variable is not set');
         }
+        serviceAccount = JSON.parse(credentials);
 
-        serviceAccount = {
-            projectId,
-            clientEmail,
-            privateKey: privateKey.replace(/\\n/g, '\n'),
-        };
+        if (!admin.apps.length) {
+            admin.initializeApp({
+                credential: admin.credential.cert(serviceAccount),
+            });
+        }
     }
 
     console.log('Firebase credentials loaded from: ', serviceAccountPath);

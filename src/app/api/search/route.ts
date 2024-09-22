@@ -37,8 +37,12 @@ async function fetchClipIdsFromCloudFunction(query: string, top_k: string, alpha
 
 async function fetchClipsFromFirestore(clipIds: string[]): Promise<Digest[]> {
     try {
+        console.log('Initializing Firebase Admin SDK');
         const { db } = await import('@/utils/firebase-admin');
+        console.log('Firebase Admin SDK initialized successfully');
+
         const clipsRef = db.collection('clips_dev_0612');
+        console.log('Firestore collection reference created');
 
         const clipPromises = clipIds.map(async (id) => {
             try {
@@ -48,11 +52,13 @@ async function fetchClipsFromFirestore(clipIds: string[]): Promise<Digest[]> {
                 return doc;
             } catch (error) {
                 console.error(`Error fetching document with ID: ${id}`, error);
-                throw error; // Re-throw to catch in the main try-catch block
+                throw error;
             }
         });
 
+        console.log('Waiting for all document fetch promises to resolve');
         const clipDocs = await Promise.all(clipPromises);
+        console.log('All documents fetched successfully');
 
         return clipDocs
             .filter(doc => doc.exists)
