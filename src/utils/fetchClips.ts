@@ -12,7 +12,7 @@ export const fetchClips = async (inputText: string): Promise<Digest[]> => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ query: inputText, top_k: "10", alpha: "0.6" })
+                body: JSON.stringify({ query: inputText, top_k: "10", alpha: "0.2" })
             });
 
             if (!response.ok) {
