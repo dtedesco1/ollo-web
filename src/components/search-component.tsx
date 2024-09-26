@@ -35,6 +35,8 @@ import Image from 'next/image';
 
 export function SearchComponent() {
   const [searchTerm, setSearchTerm] = useState("")
+  const [topK, setTopK] = useState("10")
+  const [alpha, setAlpha] = useState("0.4")
   const [results, setResults] = useState<Digest[]>([])
   const [currentlyPlaying, setCurrentlyPlaying] = useState<Digest | null>(null)
   const [currentPlaybackPosition, setCurrentPlaybackPosition] = useState(0)
@@ -70,7 +72,7 @@ export function SearchComponent() {
     setIsLoading(true)
     setError(null)
     try {
-      const clips = await fetchClips(searchTerm)
+      const clips = await fetchClips(searchTerm, topK, alpha)
       setResults(clips)
       setSelectedTags([]) // Reset selected tags on new search
     } catch (err) {
@@ -154,7 +156,7 @@ export function SearchComponent() {
   return (
     <div className="w-full max-w-6xl mx-auto px-4 py-4 pb-28">
 
-      <form onSubmit={handleSearch} className="mb-6 flex items-center gap-2">
+      <form onSubmit={handleSearch} className="mb-6 flex flex-col gap-2">
         <Input
           type="search"
           placeholder="Search podcasts..."
@@ -162,7 +164,38 @@ export function SearchComponent() {
           onChange={(e) => setSearchTerm(e.target.value)}
           className="flex-grow rounded-md px-4 py-2 bg-muted focus:outline-none focus:ring-2 focus:ring-primary"
         />
-        <Button type="submit" disabled={isLoading}>
+        <div className="flex gap-2">
+          <div className="w-1/2">
+            <label htmlFor="topK" className="block text-sm font-medium text-gray-700 mb-1">
+              Top K
+            </label>
+            <Input
+              id="topK"
+              type="number"
+              placeholder="Top K"
+              value={topK}
+              onChange={(e) => setTopK(e.target.value)}
+              className="w-full rounded-md px-4 py-2 bg-muted focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+          <div className="w-1/2">
+            <label htmlFor="alpha" className="block text-sm font-medium text-gray-700 mb-1">
+              Alpha
+            </label>
+            <Input
+              id="alpha"
+              type="number"
+              placeholder="Alpha"
+              value={alpha}
+              onChange={(e) => setAlpha(e.target.value)}
+              className="w-full rounded-md px-4 py-2 bg-muted focus:outline-none focus:ring-2 focus:ring-primary"
+              step="0.1"
+              min="0"
+              max="1"
+            />
+          </div>
+        </div>
+        <Button type="submit" disabled={isLoading} className="w-full">
           {isLoading ? 'Searching...' : 'Search'}
         </Button>
       </form>

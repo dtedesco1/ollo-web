@@ -1,6 +1,6 @@
 import { Digest } from '../types/digest';
 
-export const fetchClips = async (inputText: string): Promise<Digest[]> => {
+export const fetchClips = async (inputText: string, top_k: string = "10", alpha: string = "0.2"): Promise<Digest[]> => {
     const apiUrl = "/api/search";
     const maxRetries = 3;
     let retries = 0;
@@ -12,7 +12,7 @@ export const fetchClips = async (inputText: string): Promise<Digest[]> => {
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({ query: inputText, top_k: "10", alpha: "0.2" })
+                body: JSON.stringify({ query: inputText, top_k, alpha })
             });
 
             if (!response.ok) {
