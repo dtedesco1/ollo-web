@@ -1,13 +1,22 @@
 'use client'
 
-import { SearchComponent } from '@/components/search-component'
+import Image from 'next/image';
+import { Button } from "@/components/ui/button";
+
 
 export default function Home() {
   return (
-    <div className="min-h-screen p-8">
-      <main className="max-w-6xl mx-auto">
-        <SearchComponent />
-      </main>
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="flex flex-col items-center mt-8">
+        <Image src="/appIcon.png" alt="Logo" width={200} height={200} />
+        <div className="mt-8">
+          <Button asChild>
+            <a href="/search">
+              Go to Search
+            </a>
+          </Button>
+        </div>
+      </div>
     </div>
-  )
+  );
 }
