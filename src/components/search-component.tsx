@@ -249,7 +249,11 @@ export function SearchComponent() {
               style={{ aspectRatio: "50/50", objectFit: "cover" }}
             />
             <div>
-              <h4 className="text-lg font-semibold">{currentlyPlaying.clipTitle}</h4>
+              <h4 className="text-lg font-semibold">
+                <a href={`/clip/${currentlyPlaying.clipId}`} className="hover:underline" target="_blank" rel="noopener noreferrer">
+                  {currentlyPlaying.clipTitle}
+                </a>
+              </h4>
               <p className="text-sm text-muted-foreground">{currentlyPlaying.podcastShowTitle}</p>
             </div>
           </div>
