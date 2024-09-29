@@ -55,7 +55,7 @@ export async function fetchClipsFromFirestore(clipIds: string[]): Promise<Digest
     }
 }
 
-// Remove if no longer needed
+// Get a single clip by ID
 export async function getClipById(clipId: string): Promise<Digest | null> {
     console.log('getClipById: Fetching clip with ID:', clipId);
     const clips = await fetchClipsFromFirestore([clipId]);

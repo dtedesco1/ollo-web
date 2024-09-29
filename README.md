@@ -1,14 +1,16 @@
-# AI App MVP Project
+# OllO Web - Short-Form Audio Platform
 
 ## Overview
 
-This project is an AI-powered application MVP (Minimum Viable Product) built with Next.js and Firebase. It demonstrates the integration of artificial intelligence capabilities within a web application framework.
+OllO Web is the browser-based interface for OllO, an innovative short-form audio application. Built with Next.js and Firebase, this web version complements the main OllO mobile app, providing users with a seamless experience to interact with OllO's content on desktop and mobile web browsers.
 
 ## Features
 
-- Next.js frontend for a modern, responsive user interface
-- Firebase backend for real-time database and authentication
-- AI integration (specifics to be detailed based on the actual AI features implemented)
+- Browse and listen to short audio clips
+- User authentication and profile viewing
+- Discover trending and popular audio content
+- Web-optimized playback of OllO's short-form audio
+- Responsive design for various screen sizes
 
 ## Prerequisites
 
@@ -21,8 +23,8 @@ This project is an AI-powered application MVP (Minimum Viable Product) built wit
 1. Clone the repository:
 
    ```
-   git clone https://github.com/your-username/ai-app-mvp-project.git
-   cd ai-app-mvp-project
+   git clone https://github.com/your-username/ollo-web.git
+   cd ollo-web
    ```
 
 2. Install dependencies:
@@ -53,26 +55,35 @@ This project is an AI-powered application MVP (Minimum Viable Product) built wit
    yarn dev
    ```
 
-5. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
+5. Open [http://localhost:3000](http://localhost:3000) in your browser to see the OllO Web application.
 
 ## Project Structure
 
-- `/src`: Source code for the application
-- `/public`: Static files
+- `/src`: Source code for the web application
+- `/public`: Static files and assets
+- `/src/components`: Reusable React components
+- `/src/pages`: Next.js pages and API routes
 - `/src/utils`: Utility functions, including Firebase admin setup
 
 ## Deployment
 
-This project can be deployed on Vercel or any other platform that supports Next.js applications. Ensure that you set up the necessary environment variables for Firebase integration.
+OllO Web can be deployed on Vercel or any other platform that supports Next.js applications. Ensure that you set up the necessary environment variables for Firebase integration.
 
 ## Security Note
 
-Be cautious with the `firebase-cred.json` file. Never commit it to version control. Use environment variables for production deployments.
+Be cautious with the `firebase-cred.json` file and any other sensitive credentials. Never commit them to version control. Use environment variables for production deployments.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+We welcome contributions to OllO Web! If you have ideas for improving the web experience or new features specific to the browser version, please feel free to submit a Pull Request or open an Issue.
 
 ## License
 
-[Specify your license here]
+TODO
+
+## Related Projects
+
+For the full OllO experience, check out our mobile applications:
+
+- [OllO iOS App](https://apps.apple.com/us/app/ollo)
+- [OllO Android App](https://play.google.com/store/apps/details?id=com.ollo)
