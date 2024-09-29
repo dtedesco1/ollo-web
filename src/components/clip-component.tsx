@@ -118,13 +118,15 @@ export default function ClipComponent({ clipId }: { clipId: string }) {
     const toggleLike = () => {
         setIsLiked(!isLiked)
         toast({
-            title: isLiked ? "Removed from favorites" : "Added to favorites",
-            description: isLiked ? "This clip has been removed from your favorites." : "This clip has been added to your favorites.",
+            // title: isLiked ? "Removed from favorites" : "Added to favorites",
+            // description: isLiked ? "This clip has been removed from your favorites." : "This clip has been added to your favorites.",
+            title: isLiked ? "New feature coming soon:  Removed from favorites" : "New feature coming soon: Added to favorites",
+            description: isLiked ? "New feature coming soon: This clip has been removed from your favorites." : "New feature coming soon: This clip has been added to your favorites.",
         })
     }
 
     const shareClip = () => {
-        const clipUrl = `https://ollo.web/clip/${clip?.clipId}`
+        const clipUrl = `https://ollo.audio/clip/${clip?.clipId}`
         navigator.clipboard.writeText(clipUrl).then(() => {
             toast({
                 title: "Link copied",
