@@ -5,6 +5,8 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Digest } from "@/types/digest"
 import { fetchPodcastShowClips } from "@/utils/fetchPodcastShowClips"
+import Link from "next/link"
+import { formatDistanceToNow } from 'date-fns'
 
 export function PodcastShowSearchComponent() {
     const [searchTerm, setSearchTerm] = useState("")
@@ -129,7 +131,20 @@ export function PodcastShowSearchComponent() {
                             <div className="flex-grow">
                                 <h3 className="text-lg font-semibold">{clip.podcastShowTitle}</h3>
                                 <p className="text-sm text-muted-foreground">{clip.episodeTitle}</p>
-                                <p className="mt-2">{clip.clipTitle}</p>
+                                <Link 
+                                    href={`/clip/${clip.clipId}`}
+                                    className="mt-2 block text-primary hover:underline"
+                                >
+                                    {clip.clipTitle}
+                                </Link>
+                                {clip.clipSummary && (
+                                    <p className="mt-2 text-sm text-muted-foreground">{clip.clipSummary}</p>
+                                )}
+                                <div className="mt-2 text-xs text-muted-foreground">
+                                    {clip.indexed_timestamp && (
+                                        <span>Transcribed {formatDistanceToNow(new Date(clip.indexed_timestamp), { addSuffix: true })}</span>
+                                    )}
+                                </div>
                                 <div className="mt-2 flex items-center gap-2">
                                     <Button
                                         variant="outline"

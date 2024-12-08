@@ -43,7 +43,16 @@ export async function POST(request: Request) {
         // Fetch the actual clip data
         const clips = await fetchClipsFromFirestore(clipIds);
 
-        return NextResponse.json(clips);
+        // Sort by indexed_timestamp and limit to 15 most recent results
+        const sortedClips = clips
+            .sort((a, b) => {
+                if (!a.indexed_timestamp) return 1;
+                if (!b.indexed_timestamp) return -1;
+                return new Date(b.indexed_timestamp).getTime() - new Date(a.indexed_timestamp).getTime();
+            })
+            .slice(0, 15);
+
+        return NextResponse.json(sortedClips);
     } catch (error) {
         console.error('Error in podcast show search API:', error);
 
