@@ -1,24 +1,23 @@
 'use client'
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Digest } from "@/types/digest"
 import { fetchPodcastShowClips } from "@/utils/fetchPodcastShowClips"
 import Link from "next/link"
+import Image from "next/image"
 import { formatDistanceToNow } from 'date-fns'
 import { useRouter, useSearchParams } from 'next/navigation'
 
 export function PodcastShowSearchComponent() {
     const router = useRouter()
     const searchParams = useSearchParams()
-    const initialQuery = searchParams.get('q') || ""
+    const initialQuery = searchParams?.get('q') || ""
     
     const [searchTerm, setSearchTerm] = useState(initialQuery)
     const [results, setResults] = useState<Digest[]>([])
     const [currentlyPlaying, setCurrentlyPlaying] = useState<Digest | null>(null)
-    const [currentPlaybackPosition, setCurrentPlaybackPosition] = useState(0)
-    const [duration, setDuration] = useState(0)
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null)
@@ -26,49 +25,51 @@ export function PodcastShowSearchComponent() {
 
     // Initialize audio element
     useEffect(() => {
-        setAudioElement(new Audio())
+        const audio = typeof window !== 'undefined' ? new Audio() : null
+        setAudioElement(audio)
     }, [])
 
     // Set up audio event listeners
     useEffect(() => {
-        if (audioElement) {
-            const updateProgress = () => {
-                setCurrentPlaybackPosition(audioElement.currentTime)
-            }
-            audioElement.addEventListener('timeupdate', updateProgress)
-            audioElement.addEventListener('loadedmetadata', () => {
-                setDuration(audioElement.duration)
-            })
-            return () => {
-                audioElement.removeEventListener('timeupdate', updateProgress)
-                audioElement.removeEventListener('loadedmetadata', () => { })
-            }
+        if (!audioElement) return
+
+        const handleEnded = () => setIsPlaying(false)
+        audioElement.addEventListener('ended', handleEnded)
+        
+        return () => {
+            audioElement.removeEventListener('ended', handleEnded)
         }
     }, [audioElement])
 
-    const handleSearch = async (e: React.FormEvent) => {
+    const handleSearch = useCallback(async (e: React.FormEvent) => {
         e.preventDefault()
+        if (!searchTerm.trim()) return
+
         setIsLoading(true)
         setError(null)
         try {
             // Update URL with search query
-            router.push(`/podcast-shows?q=${encodeURIComponent(searchTerm)}`)
+            const newParams = new URLSearchParams(searchParams?.toString())
+            newParams.set('q', searchTerm)
+            router.push(`/podcast-shows?${newParams.toString()}`)
+            
             const clips = await fetchPodcastShowClips(searchTerm)
             setResults(clips)
         } catch (err) {
-            setError(err instanceof Error ? `Error: ${err.message}` : 'An unknown error occurred')
+            setError(err instanceof Error ? `Error: ${err.message}` : 'An unexpected error occurred')
             console.error('Search error:', err)
         } finally {
             setIsLoading(false)
         }
-    }
+    }, [searchTerm, router, searchParams])
 
     // Initial search if query is in URL
     useEffect(() => {
-        if (initialQuery) {
-            handleSearch(new Event('submit') as any)
+        if (initialQuery && !results.length) {
+            const syntheticEvent = { preventDefault: () => {} } as React.FormEvent
+            handleSearch(syntheticEvent)
         }
-    }, [])
+    }, [initialQuery, handleSearch, results.length])
 
     // Group results by episode
     const groupedResults = results.reduce((groups, clip) => {
@@ -120,14 +121,6 @@ export function PodcastShowSearchComponent() {
         }
     }
 
-    const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newPosition = Number(e.target.value)
-        setCurrentPlaybackPosition(newPosition)
-        if (audioElement) {
-            audioElement.currentTime = newPosition
-        }
-    }
-
     return (
         <div className="w-full max-w-6xl mx-auto px-4 py-4 pb-28">
             <form onSubmit={handleSearch} className="mb-6">
@@ -153,11 +146,14 @@ export function PodcastShowSearchComponent() {
                     <div key={episodeId} className="bg-card rounded-lg p-6 shadow-sm">
                         <div className="flex items-center gap-4 mb-4">
                             {group.podcastShowThumbnailFirebaseUrl && (
-                                <img
-                                    src={group.podcastShowThumbnailFirebaseUrl}
-                                    alt={group.podcastShowTitle}
-                                    className="w-16 h-16 rounded-md object-cover"
-                                />
+                                <div className="relative w-16 h-16">
+                                    <Image
+                                        src={group.podcastShowThumbnailFirebaseUrl}
+                                        alt={group.podcastShowTitle}
+                                        fill
+                                        className="rounded-md object-cover"
+                                    />
+                                </div>
                             )}
                             <div>
                                 <h3 className="text-lg font-semibold">{group.podcastShowTitle}</h3>
