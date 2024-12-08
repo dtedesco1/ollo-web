@@ -7,9 +7,14 @@ import { Digest } from "@/types/digest"
 import { fetchPodcastShowClips } from "@/utils/fetchPodcastShowClips"
 import Link from "next/link"
 import { formatDistanceToNow } from 'date-fns'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 export function PodcastShowSearchComponent() {
-    const [searchTerm, setSearchTerm] = useState("")
+    const router = useRouter()
+    const searchParams = useSearchParams()
+    const initialQuery = searchParams.get('q') || ""
+    
+    const [searchTerm, setSearchTerm] = useState(initialQuery)
     const [results, setResults] = useState<Digest[]>([])
     const [currentlyPlaying, setCurrentlyPlaying] = useState<Digest | null>(null)
     const [currentPlaybackPosition, setCurrentPlaybackPosition] = useState(0)
@@ -46,6 +51,8 @@ export function PodcastShowSearchComponent() {
         setIsLoading(true)
         setError(null)
         try {
+            // Update URL with search query
+            router.push(`/podcast-shows?q=${encodeURIComponent(searchTerm)}`)
             const clips = await fetchPodcastShowClips(searchTerm)
             setResults(clips)
         } catch (err) {
@@ -55,6 +62,33 @@ export function PodcastShowSearchComponent() {
             setIsLoading(false)
         }
     }
+
+    // Initial search if query is in URL
+    useEffect(() => {
+        if (initialQuery) {
+            handleSearch(new Event('submit') as any)
+        }
+    }, [])
+
+    // Group results by episode
+    const groupedResults = results.reduce((groups, clip) => {
+        const episodeId = clip.episodeId
+        if (!groups[episodeId]) {
+            groups[episodeId] = {
+                episodeTitle: clip.episodeTitle,
+                podcastShowTitle: clip.podcastShowTitle,
+                podcastShowThumbnailFirebaseUrl: clip.podcastShowThumbnailFirebaseUrl,
+                clips: []
+            }
+        }
+        groups[episodeId].clips.push(clip)
+        return groups
+    }, {} as Record<string, { 
+        episodeTitle: string, 
+        podcastShowTitle: string, 
+        podcastShowThumbnailFirebaseUrl: string | undefined,
+        clips: Digest[] 
+    }>)
 
     const handlePlay = (clip: Digest) => {
         if (audioElement) {
@@ -114,47 +148,50 @@ export function PodcastShowSearchComponent() {
                 <div className="text-red-500 py-4">{error}</div>
             )}
 
-            <div className="space-y-4">
-                {results.map((clip) => (
-                    <div
-                        key={clip.clipId}
-                        className="bg-card rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow"
-                    >
-                        <div className="flex items-start gap-4">
-                            {clip.podcastShowThumbnailFirebaseUrl && (
+            <div className="space-y-8">
+                {Object.entries(groupedResults).map(([episodeId, group]) => (
+                    <div key={episodeId} className="bg-card rounded-lg p-6 shadow-sm">
+                        <div className="flex items-center gap-4 mb-4">
+                            {group.podcastShowThumbnailFirebaseUrl && (
                                 <img
-                                    src={clip.podcastShowThumbnailFirebaseUrl}
-                                    alt={clip.podcastShowTitle}
+                                    src={group.podcastShowThumbnailFirebaseUrl}
+                                    alt={group.podcastShowTitle}
                                     className="w-16 h-16 rounded-md object-cover"
                                 />
                             )}
-                            <div className="flex-grow">
-                                <h3 className="text-lg font-semibold">{clip.podcastShowTitle}</h3>
-                                <p className="text-sm text-muted-foreground">{clip.episodeTitle}</p>
-                                <Link 
-                                    href={`/clip/${clip.clipId}`}
-                                    className="mt-2 block text-primary hover:underline"
-                                >
-                                    {clip.clipTitle}
-                                </Link>
-                                {clip.clipSummary && (
-                                    <p className="mt-2 text-sm text-muted-foreground">{clip.clipSummary}</p>
-                                )}
-                                <div className="mt-2 text-xs text-muted-foreground">
-                                    {clip.indexed_timestamp && (
-                                        <span>Transcribed {formatDistanceToNow(new Date(clip.indexed_timestamp), { addSuffix: true })}</span>
-                                    )}
-                                </div>
-                                <div className="mt-2 flex items-center gap-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() => currentlyPlaying?.clipId === clip.clipId ? togglePlayPause() : handlePlay(clip)}
-                                    >
-                                        {currentlyPlaying?.clipId === clip.clipId && isPlaying ? 'Pause' : 'Play'}
-                                    </Button>
-                                </div>
+                            <div>
+                                <h3 className="text-lg font-semibold">{group.podcastShowTitle}</h3>
+                                <p className="text-sm text-muted-foreground">{group.episodeTitle}</p>
                             </div>
+                        </div>
+                        <div className="space-y-4 ml-20">
+                            {group.clips.map((clip) => (
+                                <div key={clip.clipId} className="border-l-2 border-muted pl-4">
+                                    <Link 
+                                        href={`/clip/${clip.clipId}`}
+                                        className="block text-primary hover:underline"
+                                    >
+                                        {clip.clipTitle}
+                                    </Link>
+                                    {clip.clipSummary && (
+                                        <p className="mt-2 text-sm text-muted-foreground">{clip.clipSummary}</p>
+                                    )}
+                                    <div className="mt-2 text-xs text-muted-foreground">
+                                        {clip.indexed_timestamp && (
+                                            <span>Transcribed {formatDistanceToNow(new Date(clip.indexed_timestamp), { addSuffix: true })}</span>
+                                        )}
+                                    </div>
+                                    <div className="mt-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => currentlyPlaying?.clipId === clip.clipId ? togglePlayPause() : handlePlay(clip)}
+                                        >
+                                            {currentlyPlaying?.clipId === clip.clipId && isPlaying ? 'Pause' : 'Play'}
+                                        </Button>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
                     </div>
                 ))}

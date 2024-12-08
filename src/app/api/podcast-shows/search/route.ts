@@ -24,14 +24,23 @@ export async function POST(request: Request) {
 
         // Get all episode subcollections and their clips
         const clipIds: string[] = [];
+        let clipsCount = 0;
+
         for (const showDoc of showsSnapshot.docs) {
+            if (clipsCount >= 15) break;
+
             const episodesRef = showDoc.ref.collection('episodes');
             const episodesSnapshot = await episodesRef.get();
 
             for (const episodeDoc of episodesSnapshot.docs) {
+                if (clipsCount >= 15) break;
+
                 const episodeData = episodeDoc.data();
                 if (episodeData.clips && Array.isArray(episodeData.clips)) {
-                    clipIds.push(...episodeData.clips);
+                    const remainingSlots = 15 - clipsCount;
+                    const clipsToAdd = episodeData.clips.slice(0, remainingSlots);
+                    clipIds.push(...clipsToAdd);
+                    clipsCount += clipsToAdd.length;
                 }
             }
         }
@@ -43,14 +52,13 @@ export async function POST(request: Request) {
         // Fetch the actual clip data
         const clips = await fetchClipsFromFirestore(clipIds);
 
-        // Sort by indexed_timestamp and limit to 15 most recent results
+        // Sort by indexed_timestamp 
         const sortedClips = clips
             .sort((a, b) => {
                 if (!a.indexed_timestamp) return 1;
                 if (!b.indexed_timestamp) return -1;
                 return new Date(b.indexed_timestamp).getTime() - new Date(a.indexed_timestamp).getTime();
-            })
-            .slice(0, 15);
+            });
 
         return NextResponse.json(sortedClips);
     } catch (error) {
