@@ -46,8 +46,9 @@ export default function VideoPage() {
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       setVideoURL(url);
-    } catch (err: any) {
-      setError(err.message || 'An unexpected error occurred.');
+    } catch (error: Error | unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }

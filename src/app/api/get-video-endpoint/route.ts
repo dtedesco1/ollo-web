@@ -19,10 +19,11 @@ export async function GET() {
             url: `${CLOUD_RUN_URL}?token=${token}`,
             success: true 
         });
-    } catch (error: any) {
+    } catch (error: Error | unknown) {
         console.error('Error generating video endpoint:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Internal server error';
         return NextResponse.json(
-            { error: error.message || 'Internal server error', success: false },
+            { error: errorMessage, success: false },
             { status: 500 }
         );
     }

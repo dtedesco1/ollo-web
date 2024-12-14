@@ -30,10 +30,11 @@ export async function POST(request: NextRequest) {
                 'Content-Disposition': 'attachment; filename="generated-video.mp4"'
             }
         });
-    } catch (error: any) {
+    } catch (error: Error | unknown) {
         console.error('Error generating video:', error);
+        const errorMessage = error instanceof Error ? error.message : 'Internal server error';
         return NextResponse.json(
-            { error: error.message || 'Internal server error' },
+            { error: errorMessage },
             { status: 500 }
         );
     }
