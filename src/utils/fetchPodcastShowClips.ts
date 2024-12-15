@@ -1,6 +1,12 @@
 import { Digest } from '@/types/digest';
 
-export const fetchPodcastShowClips = async (showTitle: string): Promise<Digest[]> => {
+interface SearchResponse {
+    results: Digest[];
+    hasMore: boolean;
+    total: number;
+}
+
+export const fetchPodcastShowClips = async (showTitle: string): Promise<SearchResponse> => {
     const apiUrl = "/api/podcast-shows/search";
     const maxRetries = 3;
     let retries = 0;
@@ -20,25 +26,25 @@ export const fetchPodcastShowClips = async (showTitle: string): Promise<Digest[]
                 throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
             }
 
-            const clips: Digest[] = await response.json();
-            if (!Array.isArray(clips)) {
+            const data = await response.json();
+            if (!Array.isArray(data.results)) {
                 throw new Error('Invalid response format');
             }
 
-            // Sort clips by indexed_timestamp in descending order
-            return clips.sort((a, b) => {
-                if (!a.indexed_timestamp) return 1;
-                if (!b.indexed_timestamp) return -1;
-                return new Date(b.indexed_timestamp).getTime() - new Date(a.indexed_timestamp).getTime();
-            });
+            return {
+                results: data.results,
+                hasMore: data.hasMore || false,
+                total: data.total || data.results.length
+            };
         } catch (error) {
             retries++;
             if (retries === maxRetries) {
-                console.error('Failed to get clips after retries:', error);
                 throw error;
             }
+            // Wait before retrying (exponential backoff)
+            await new Promise(resolve => setTimeout(resolve, Math.pow(2, retries) * 1000));
         }
     }
 
-    return [];
-};
+    throw new Error('Max retries exceeded');
+}

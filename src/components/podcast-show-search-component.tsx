@@ -17,6 +17,8 @@ export function PodcastShowSearchComponent() {
     
     const [searchTerm, setSearchTerm] = useState(initialQuery)
     const [results, setResults] = useState<Digest[]>([])
+    const [hasMore, setHasMore] = useState(false)
+    const [totalResults, setTotalResults] = useState(0)
     const [currentlyPlaying, setCurrentlyPlaying] = useState<Digest | null>(null)
     const [isLoading, setIsLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -53,8 +55,10 @@ export function PodcastShowSearchComponent() {
             newParams.set('q', searchTerm)
             router.push(`/podcast-shows?${newParams.toString()}`)
             
-            const clips = await fetchPodcastShowClips(searchTerm)
-            setResults(clips)
+            const response = await fetchPodcastShowClips(searchTerm)
+            setResults(response.results)
+            setHasMore(response.hasMore)
+            setTotalResults(response.total)
         } catch (err) {
             setError(err instanceof Error ? `Error: ${err.message}` : 'An unexpected error occurred')
             console.error('Search error:', err)
@@ -123,14 +127,21 @@ export function PodcastShowSearchComponent() {
 
     return (
         <div className="w-full max-w-6xl mx-auto px-4 py-4 pb-28">
+            <h1 className="text-3xl font-bold mb-2">Search Podcasts</h1>
+            <p className="text-lg text-muted-foreground mb-6">Find our most recent clips from your favorite podcasts.</p>
             <form onSubmit={handleSearch} className="mb-6">
-                <Input
-                    type="search"
-                    placeholder="Search podcast shows..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="flex-grow rounded-md px-4 py-2 bg-muted focus:outline-none focus:ring-2 focus:ring-primary"
-                />
+                <div className="space-y-2">
+                    <Input
+                        type="search"
+                        placeholder="Search podcast shows..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="flex-grow rounded-md px-4 py-2 bg-muted focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                    <p className="text-sm text-muted-foreground">
+                        Returns clips from the last 30 days
+                    </p>
+                </div>
             </form>
 
             {isLoading && (
@@ -139,6 +150,21 @@ export function PodcastShowSearchComponent() {
 
             {error && (
                 <div className="text-red-500 py-4">{error}</div>
+            )}
+
+            {!isLoading && !error && results.length === 0 && searchTerm && (
+                <div className="text-center py-8 text-muted-foreground">
+                    No podcast shows found matching "{searchTerm}"
+                </div>
+            )}
+
+            {!isLoading && !error && results.length > 0 && (
+                <div className="mb-4 text-sm text-muted-foreground">
+                    {results.length === 50 && hasMore 
+                        ? `Showing first 50 results of ${totalResults} matches.`
+                        : `Found ${totalResults} matching clips`
+                    }
+                </div>
             )}
 
             <div className="space-y-8">

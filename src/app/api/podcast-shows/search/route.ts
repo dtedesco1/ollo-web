@@ -19,28 +19,28 @@ export async function POST(request: Request) {
             .get();
 
         if (showsSnapshot.empty) {
-            return NextResponse.json([]);
+            return NextResponse.json({ 
+                error: 'No podcast shows found matching your search',
+                results: [] 
+            }, { status: 404 });
         }
 
         // Get all episode subcollections and their clips
         const clipIds: string[] = [];
-        let clipsCount = 0;
 
         for (const showDoc of showsSnapshot.docs) {
-            if (clipsCount >= 15) break;
-
             const episodesRef = showDoc.ref.collection('episodes');
-            const episodesSnapshot = await episodesRef.get();
+            const oneMonthAgo = new Date();
+            oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+            
+            const episodesSnapshot = await episodesRef
+                .where('processed_time', '>=', oneMonthAgo.toISOString())
+                .get();
 
             for (const episodeDoc of episodesSnapshot.docs) {
-                if (clipsCount >= 15) break;
-
                 const episodeData = episodeDoc.data();
                 if (episodeData.clips && Array.isArray(episodeData.clips)) {
-                    const remainingSlots = 15 - clipsCount;
-                    const clipsToAdd = episodeData.clips.slice(0, remainingSlots);
-                    clipIds.push(...clipsToAdd);
-                    clipsCount += clipsToAdd.length;
+                    clipIds.push(...episodeData.clips);
                 }
             }
         }
@@ -52,7 +52,7 @@ export async function POST(request: Request) {
         // Fetch the actual clip data
         const clips = await fetchClipsFromFirestore(clipIds);
 
-        // Sort by indexed_timestamp 
+        // Sort by indexed_timestamp
         const sortedClips = clips
             .sort((a, b) => {
                 if (!a.indexed_timestamp) return 1;
@@ -60,7 +60,15 @@ export async function POST(request: Request) {
                 return new Date(b.indexed_timestamp).getTime() - new Date(a.indexed_timestamp).getTime();
             });
 
-        return NextResponse.json(sortedClips);
+        // Limit to 50 clips
+        const limitedClips = sortedClips.slice(0, 50);
+        const hasMore = sortedClips.length > 50;
+
+        return NextResponse.json({
+            results: limitedClips,
+            hasMore: hasMore,
+            total: sortedClips.length
+        });
     } catch (error) {
         console.error('Error in podcast show search API:', error);
 
