@@ -154,7 +154,7 @@ export function PodcastShowSearchComponent() {
 
             {!isLoading && !error && results.length === 0 && searchTerm && (
                 <div className="text-center py-8 text-muted-foreground">
-                    No podcast shows found matching "{searchTerm}"
+                    {`No podcast shows found matching "${searchTerm}"`}
                 </div>
             )}
 

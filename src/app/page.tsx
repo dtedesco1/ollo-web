@@ -20,7 +20,7 @@ export default function Home() {
               Search Shows
             </a>
           </Button>
-          <Button asChild variant="secondary">
+          <Button asChild>
             <a href="/render-video">
               Generate Video
             </a>
