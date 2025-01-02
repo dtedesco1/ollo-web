@@ -11,6 +11,8 @@ import { formatDistanceToNow } from 'date-fns'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { saveAs } from 'file-saver'
 
+const PAGE_SIZE = 15;
+
 export function PodcastShowSearchComponent() {
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -27,6 +29,12 @@ export function PodcastShowSearchComponent() {
     const [isPlaying, setIsPlaying] = useState(false)
     const [currentPlaybackPosition, setCurrentPlaybackPosition] = useState(0)
     const [duration, setDuration] = useState(0)
+    const [currentPage, setCurrentPage] = useState(1)
+    const [isLoadingMore, setIsLoadingMore] = useState(false)
+    const [hasSearched, setHasSearched] = useState(false)
+    const [searchStatus, setSearchStatus] = useState<'idle' | 'not_found' | 'loading' | 'error' | 'success'>('idle')
+    const [isPaginating, setIsPaginating] = useState(false)
+    const [lastSearchedTerm, setLastSearchedTerm] = useState(initialQuery)
 
     // Initialize audio element
     useEffect(() => {
@@ -77,19 +85,26 @@ export function PodcastShowSearchComponent() {
 
         setIsLoading(true)
         setError(null)
+        setCurrentPage(1)
+        setHasSearched(true)
+        setSearchStatus('loading')
+        setResults([])
+        setLastSearchedTerm(searchTerm)
+
         try {
-            // Update URL with search query
             const newParams = new URLSearchParams(searchParams?.toString())
             newParams.set('q', searchTerm)
             router.push(`/podcast-shows?${newParams.toString()}`)
 
-            const response = await fetchPodcastShowClips(searchTerm)
+            const response = await fetchPodcastShowClips(searchTerm, 1, PAGE_SIZE)
             setResults(response.results)
             setHasMore(response.hasMore)
             setTotalResults(response.total)
+            setSearchStatus(response.results.length > 0 ? 'success' : 'not_found')
         } catch (err) {
-            setError(err instanceof Error ? `Error: ${err.message}` : 'An unexpected error occurred')
             console.error('Search error:', err)
+            setError(err instanceof Error ? `Error: ${err.message}` : 'An unexpected error occurred')
+            setSearchStatus('error')
         } finally {
             setIsLoading(false)
         }
@@ -99,6 +114,8 @@ export function PodcastShowSearchComponent() {
     useEffect(() => {
         if (initialQuery && !results.length) {
             const syntheticEvent = { preventDefault: () => { } } as React.FormEvent
+            setHasSearched(true)
+            setLastSearchedTerm(initialQuery)
             handleSearch(syntheticEvent)
         }
     }, [initialQuery, handleSearch, results.length])
@@ -176,12 +193,32 @@ export function PodcastShowSearchComponent() {
         }
     }
 
+    const loadMore = async () => {
+        if (isLoadingMore) return
+
+        setIsLoadingMore(true)
+        setIsPaginating(true)
+        try {
+            console.log(`Loading page ${currentPage + 1}...`)
+            const response = await fetchPodcastShowClips(searchTerm, currentPage + 1, PAGE_SIZE)
+            setResults(prevResults => [...prevResults, ...response.results])
+            setHasMore(response.hasMore)
+            setCurrentPage(prev => prev + 1)
+        } catch (err) {
+            console.error('Error loading more results:', err)
+            setError(err instanceof Error ? `Error: ${err.message}` : 'An unexpected error occurred')
+        } finally {
+            setIsLoadingMore(false)
+            setIsPaginating(false)
+        }
+    }
+
     return (
         <div className="w-full max-w-6xl mx-auto px-4 py-4 pb-28">
             <h1 className="text-3xl font-bold mb-2">Search Podcasts</h1>
             <p className="text-lg text-muted-foreground mb-6">Find our most recent clips from your favorite podcasts.</p>
             <form onSubmit={handleSearch} className="mb-6">
-                <div className="space-y-2">
+                <div className="flex gap-2">
                     <Input
                         type="search"
                         placeholder="Search podcast shows..."
@@ -189,37 +226,45 @@ export function PodcastShowSearchComponent() {
                         onChange={(e) => setSearchTerm(e.target.value)}
                         className="flex-grow rounded-md px-4 py-2 bg-muted focus:outline-none focus:ring-2 focus:ring-primary"
                     />
-                    <p className="text-sm text-muted-foreground">
-                        Returns clips from the last 30 days
-                    </p>
+                    <Button type="submit" disabled={isLoading}>
+                        {isLoading ? 'Searching...' : 'Search'}
+                    </Button>
                 </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                    Returns clips from the last 30 days
+                </p>
             </form>
 
-            {isLoading && (
-                <div className="text-center py-4">Loading...</div>
-            )}
+            <div className="my-4">
+                {searchStatus === 'loading' && !isPaginating && (
+                    <div className="text-center py-4 text-primary">
+                        Searching for &quot;{lastSearchedTerm}&quot;...
+                    </div>
+                )}
 
-            {error && (
-                <div className="text-red-500 py-4">{error}</div>
-            )}
+                {searchStatus === 'not_found' && hasSearched && (
+                    <div className="text-center py-4 text-muted-foreground">
+                        No podcast shows found matching &quot;{lastSearchedTerm}&quot;. Please try a different search term.
+                    </div>
+                )}
 
-            {!isLoading && !error && results.length === 0 && searchTerm && (
-                <div className="text-center py-8 text-muted-foreground">
-                    {`No podcast shows found matching "${searchTerm}"`}
-                </div>
-            )}
+                {searchStatus === 'error' && (
+                    <div className="text-center py-4 text-destructive">
+                        {error?.includes('404')
+                            ? `The podcast show "${lastSearchedTerm}" could not be found.`
+                            : error || 'An unexpected error occurred while searching. Please try again.'}
+                    </div>
+                )}
 
-            {!isLoading && !error && results.length > 0 && (
-                <div className="mb-4 text-sm text-muted-foreground">
-                    {results.length === 50 && hasMore
-                        ? `Showing first 50 results of ${totalResults} matches.`
-                        : `Found ${totalResults} matching clips`
-                    }
-                </div>
-            )}
+                {searchStatus === 'success' && (
+                    <div className="mb-4 text-sm text-muted-foreground">
+                        {`Found ${totalResults} matches for "${lastSearchedTerm}". Showing ${results.length} of ${totalResults} results.`}
+                    </div>
+                )}
+            </div>
 
             <div className="space-y-8">
-                {Object.entries(groupedResults).map(([episodeId, group]) => (
+                {searchStatus === 'success' && Object.entries(groupedResults).map(([episodeId, group]) => (
                     <div key={episodeId} className="bg-card rounded-lg p-6 shadow-sm">
                         <div className="flex items-center gap-4 mb-4">
                             {group.podcastShowThumbnailFirebaseUrl && (
@@ -310,6 +355,19 @@ export function PodcastShowSearchComponent() {
                             />
                         </div>
                     </div>
+                </div>
+            )}
+
+            {hasMore && searchStatus === 'success' && (
+                <div className="mt-8 text-center">
+                    <Button
+                        onClick={loadMore}
+                        disabled={isLoadingMore}
+                        variant="outline"
+                        className="w-full max-w-xs"
+                    >
+                        {isLoadingMore ? 'Loading more results...' : `Load More (${results.length} of ${totalResults})`}
+                    </Button>
                 </div>
             )}
         </div>

@@ -1,14 +1,18 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { FirebaseError } from 'firebase/app';
 import { fetchClipsFromFirestore } from '@/utils/clipUtils';
 import { db } from '@/utils/firebase-admin';
 
-export async function POST(request: Request) {
+export async function GET(request: NextRequest) {
     try {
-        const { query } = await request.json();
+        const searchParams = request.nextUrl.searchParams;
+        const query = searchParams.get('q');
+        const page = parseInt(searchParams.get('page') || '1');
+        const limit = parseInt(searchParams.get('limit') || '15');
 
         if (!query) {
-            return NextResponse.json({ error: 'Query is required' }, { status: 400 });
+            console.log('Search request missing query parameter');
+            return NextResponse.json({ error: 'Query parameter is required' }, { status: 400 });
         }
 
         // Query the podcast_shows_index collection for matching show titles
@@ -19,9 +23,9 @@ export async function POST(request: Request) {
             .get();
 
         if (showsSnapshot.empty) {
-            return NextResponse.json({ 
+            return NextResponse.json({
                 error: 'No podcast shows found matching your search',
-                results: [] 
+                results: []
             }, { status: 404 });
         }
 
@@ -32,7 +36,7 @@ export async function POST(request: Request) {
             const episodesRef = showDoc.ref.collection('episodes');
             const oneMonthAgo = new Date();
             oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-            
+
             const episodesSnapshot = await episodesRef
                 .where('processed_time', '>=', oneMonthAgo.toISOString())
                 .get();
@@ -46,7 +50,11 @@ export async function POST(request: Request) {
         }
 
         if (clipIds.length === 0) {
-            return NextResponse.json([]);
+            return NextResponse.json({
+                results: [],
+                hasMore: false,
+                total: 0
+            });
         }
 
         // Fetch the actual clip data
@@ -60,15 +68,20 @@ export async function POST(request: Request) {
                 return new Date(b.indexed_timestamp).getTime() - new Date(a.indexed_timestamp).getTime();
             });
 
-        // Limit to 50 clips
-        const limitedClips = sortedClips.slice(0, 50);
-        const hasMore = sortedClips.length > 50;
+        // Calculate pagination
+        const startIndex = (page - 1) * limit;
+        const endIndex = startIndex + limit;
+        const paginatedClips = sortedClips.slice(startIndex, endIndex);
+        const hasMore = sortedClips.length > endIndex;
+
+        console.log(`Found ${sortedClips.length} total clips, returning ${paginatedClips.length} for page ${page}`);
 
         return NextResponse.json({
-            results: limitedClips,
-            hasMore: hasMore,
+            results: paginatedClips,
+            hasMore,
             total: sortedClips.length
         });
+
     } catch (error) {
         console.error('Error in podcast show search API:', error);
 
