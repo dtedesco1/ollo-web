@@ -9,12 +9,13 @@ import Link from "next/link"
 import Image from "next/image"
 import { formatDistanceToNow } from 'date-fns'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { saveAs } from 'file-saver'
 
 export function PodcastShowSearchComponent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const initialQuery = searchParams?.get('q') || ""
-    
+
     const [searchTerm, setSearchTerm] = useState(initialQuery)
     const [results, setResults] = useState<Digest[]>([])
     const [hasMore, setHasMore] = useState(false)
@@ -24,6 +25,8 @@ export function PodcastShowSearchComponent() {
     const [error, setError] = useState<string | null>(null)
     const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null)
     const [isPlaying, setIsPlaying] = useState(false)
+    const [currentPlaybackPosition, setCurrentPlaybackPosition] = useState(0)
+    const [duration, setDuration] = useState(0)
 
     // Initialize audio element
     useEffect(() => {
@@ -37,9 +40,34 @@ export function PodcastShowSearchComponent() {
 
         const handleEnded = () => setIsPlaying(false)
         audioElement.addEventListener('ended', handleEnded)
-        
+
         return () => {
             audioElement.removeEventListener('ended', handleEnded)
+        }
+    }, [audioElement])
+
+    useEffect(() => {
+        if (audioElement) {
+            const updateProgress = () => {
+                setCurrentPlaybackPosition(audioElement.currentTime)
+            }
+
+            const handleEnded = () => {
+                setIsPlaying(false)
+                setCurrentPlaybackPosition(0)
+            }
+
+            audioElement.addEventListener('timeupdate', updateProgress)
+            audioElement.addEventListener('loadedmetadata', () => {
+                setDuration(audioElement.duration)
+            })
+            audioElement.addEventListener('ended', handleEnded)
+
+            return () => {
+                audioElement.removeEventListener('timeupdate', updateProgress)
+                audioElement.removeEventListener('loadedmetadata', () => { })
+                audioElement.removeEventListener('ended', handleEnded)
+            }
         }
     }, [audioElement])
 
@@ -54,7 +82,7 @@ export function PodcastShowSearchComponent() {
             const newParams = new URLSearchParams(searchParams?.toString())
             newParams.set('q', searchTerm)
             router.push(`/podcast-shows?${newParams.toString()}`)
-            
+
             const response = await fetchPodcastShowClips(searchTerm)
             setResults(response.results)
             setHasMore(response.hasMore)
@@ -70,7 +98,7 @@ export function PodcastShowSearchComponent() {
     // Initial search if query is in URL
     useEffect(() => {
         if (initialQuery && !results.length) {
-            const syntheticEvent = { preventDefault: () => {} } as React.FormEvent
+            const syntheticEvent = { preventDefault: () => { } } as React.FormEvent
             handleSearch(syntheticEvent)
         }
     }, [initialQuery, handleSearch, results.length])
@@ -88,11 +116,11 @@ export function PodcastShowSearchComponent() {
         }
         groups[episodeId].clips.push(clip)
         return groups
-    }, {} as Record<string, { 
-        episodeTitle: string, 
-        podcastShowTitle: string, 
+    }, {} as Record<string, {
+        episodeTitle: string,
+        podcastShowTitle: string,
         podcastShowThumbnailFirebaseUrl: string | undefined,
-        clips: Digest[] 
+        clips: Digest[]
     }>)
 
     const handlePlay = (clip: Digest) => {
@@ -121,6 +149,29 @@ export function PodcastShowSearchComponent() {
             } else {
                 audioElement.play()
                 setIsPlaying(true)
+            }
+        }
+    }
+
+    const handleProgressChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newPosition = Number(e.target.value)
+        setCurrentPlaybackPosition(newPosition)
+        if (audioElement) {
+            audioElement.currentTime = newPosition
+        }
+    }
+
+    const handleDownload = async () => {
+        if (currentlyPlaying) {
+            try {
+                const response = await fetch(`/api/download?url=${encodeURIComponent(currentlyPlaying.firebaseAudioTokenUrl)}`);
+                if (!response.ok) throw new Error('Download failed');
+                const blob = await response.blob();
+                const fileName = `${currentlyPlaying.clipTitle}.mp3`;
+                saveAs(blob, fileName);
+            } catch (error) {
+                console.error('Download error:', error);
+                setError('Failed to download the audio file.');
             }
         }
     }
@@ -160,7 +211,7 @@ export function PodcastShowSearchComponent() {
 
             {!isLoading && !error && results.length > 0 && (
                 <div className="mb-4 text-sm text-muted-foreground">
-                    {results.length === 50 && hasMore 
+                    {results.length === 50 && hasMore
                         ? `Showing first 50 results of ${totalResults} matches.`
                         : `Found ${totalResults} matching clips`
                     }
@@ -189,7 +240,7 @@ export function PodcastShowSearchComponent() {
                         <div className="space-y-4 ml-20">
                             {group.clips.map((clip) => (
                                 <div key={clip.clipId} className="border-l-2 border-muted pl-4">
-                                    <Link 
+                                    <Link
                                         href={`/clip/${clip.clipId}`}
                                         className="block text-primary hover:underline"
                                     >
@@ -218,6 +269,109 @@ export function PodcastShowSearchComponent() {
                     </div>
                 ))}
             </div>
+
+            {currentlyPlaying && (
+                <div className="fixed bottom-0 left-0 w-full bg-muted p-4 flex items-center justify-between z-50">
+                    <div className="flex items-center gap-4">
+                        {currentlyPlaying.podcastShowThumbnailFirebaseUrl && (
+                            <Image
+                                src={currentlyPlaying.podcastShowThumbnailFirebaseUrl}
+                                alt={currentlyPlaying.clipTitle}
+                                width={50}
+                                height={50}
+                                className="rounded-lg object-cover"
+                                style={{ aspectRatio: "50/50", objectFit: "cover" }}
+                            />
+                        )}
+                        <div>
+                            <h4 className="text-lg font-semibold">
+                                <Link href={`/clip/${currentlyPlaying.clipId}`} className="hover:underline">
+                                    {currentlyPlaying.clipTitle}
+                                </Link>
+                            </h4>
+                            <p className="text-sm text-muted-foreground">{currentlyPlaying.podcastShowTitle}</p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-4 flex-1 max-w-2xl ml-4">
+                        <Button variant="ghost" size="icon" onClick={togglePlayPause}>
+                            {isPlaying ? <PauseIcon className="w-5 h-5" /> : <PlayIcon className="w-5 h-5" />}
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={handleDownload}>
+                            <DownloadIcon className="w-5 h-5" />
+                        </Button>
+                        <div className="w-full">
+                            <input
+                                type="range"
+                                min={0}
+                                max={duration}
+                                value={currentPlaybackPosition}
+                                onChange={handleProgressChange}
+                                className="w-full"
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
+    )
+}
+
+function PauseIcon(props: React.SVGProps<SVGSVGElement>) {
+    return (
+        <svg
+            {...props}
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <rect x="6" y="4" width="4" height="16" />
+            <rect x="14" y="4" width="4" height="16" />
+        </svg>
+    )
+}
+
+function PlayIcon(props: React.SVGProps<SVGSVGElement>) {
+    return (
+        <svg
+            {...props}
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <polygon points="5 3 19 12 5 21 5 3" />
+        </svg>
+    )
+}
+
+function DownloadIcon(props: React.SVGProps<SVGSVGElement>) {
+    return (
+        <svg
+            {...props}
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+        >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" x2="12" y1="15" y2="3" />
+        </svg>
     )
 }
