@@ -6,7 +6,7 @@ const PrivacyPage = () => {
             <h1 className="text-3xl font-bold mb-8">Privacy Policy</h1>
 
             <section className="mb-8">
-                <h2 className="text-2xl font-semibold mb-4">Welcome to OllO's Privacy Policy</h2>
+                <h2 className="text-2xl font-semibold mb-4">Welcome to OllO&apos;s Privacy Policy</h2>
                 <p className="mb-4">At OllO, we take your privacy seriously. This policy explains how we collect, use, and protect your personal information when you use our service. By using OllO, you agree to the collection and use of information in accordance with this policy.</p>
             </section>
 
@@ -92,13 +92,13 @@ const PrivacyPage = () => {
             </section>
 
             <section className="mb-8">
-                <h2 className="text-2xl font-semibold mb-4">Children's Privacy</h2>
+                <h2 className="text-2xl font-semibold mb-4">Children&apos;s Privacy</h2>
                 <p className="mb-4">Our service is not intended for users under 13 years of age. We do not knowingly collect personal information from children. If you become aware that a child has provided us with personal information, please contact us.</p>
             </section>
 
             <section className="mb-8">
                 <h2 className="text-2xl font-semibold mb-4">Changes to This Policy</h2>
-                <p className="mb-4">We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the "Last Updated" date.</p>
+                <p className="mb-4">We may update this Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page and updating the &quot;Last Updated&quot; date.</p>
             </section>
 
             <section className="mb-8">

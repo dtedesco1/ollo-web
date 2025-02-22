@@ -7,19 +7,19 @@ const TermsPage = () => {
 
             <section className="mb-8">
                 <h2 className="text-2xl font-semibold mb-4">Welcome to OllO!</h2>
-                <p className="mb-4">These Terms of Service constitute a legally binding agreement between Ollo Labs Inc. ("Company," "we," "us," or "our") and each user ("you" or "your"). By using OllO, you're agreeing to these terms, so please read them carefully. To use OllO, you must be at least thirteen (13) years old (or any greater age required in your location).</p>
+                <p className="mb-4">These Terms of Service constitute a legally binding agreement between Ollo Labs Inc. (&quot;Company,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) and each user (&quot;you&quot; or &quot;your&quot;). By using OllO, you&apos;re agreeing to these terms, so please read them carefully. To use OllO, you must be at least thirteen (13) years old (or any greater age required in your location).</p>
             </section>
 
             <section className="mb-8">
                 <h2 className="text-2xl font-semibold mb-4">Acceptance of Terms</h2>
-                <p className="mb-4">By downloading, accessing, or using the OllO app or website (the "Service"), creating an account, or clicking "I agree," you acknowledge that you have read, understood, and agree to be bound by these Terms of Service. If you don't agree with these terms, please don't use our Service.</p>
+                <p className="mb-4">By downloading, accessing, or using the OllO app or website (the &quot;Service&quot;), creating an account, or clicking &quot;I agree,&quot; you acknowledge that you have read, understood, and agree to be bound by these Terms of Service. If you don&apos;t agree with these terms, please don&apos;t use our Service.</p>
             </section>
 
             <section className="mb-8">
                 <h2 className="text-2xl font-semibold mb-4">About Our Service</h2>
                 <p className="mb-4">OllO is an innovative AI-powered platform designed to help you discover, learn from, and share audio content. While we strive to provide a great experience, please understand that:</p>
                 <ul className="list-disc pl-6 mb-4">
-                    <li className="mb-2">Our Service is provided "as is" and may change over time</li>
+                    <li className="mb-2">Our Service is provided &quot;as is&quot; and may change over time</li>
                     <li className="mb-2">We may add, remove, or modify features at any time</li>
                     <li className="mb-2">We may experience occasional downtime or technical issues</li>
                     <li className="mb-2">Content recommendations are algorithmic and may not always match your preferences</li>
@@ -33,7 +33,7 @@ const TermsPage = () => {
                 <p className="mb-4">We offer certain features at no cost. We may change, limit, or discontinue any aspect of the free service at our discretion.</p>
 
                 <h3 className="text-xl font-semibold mt-6 mb-3">Premium Features</h3>
-                <p className="mb-4">Additional features may be available through premium subscriptions. Subscription terms, pricing, and features may change. Cancellation policies and payment terms are handled through your platform's app store or our payment processor.</p>
+                <p className="mb-4">Additional features may be available through premium subscriptions. Subscription terms, pricing, and features may change. Cancellation policies and payment terms are handled through your platform&apos;s app store or our payment processor.</p>
             </section>
 
             <section className="mb-8">
@@ -67,7 +67,7 @@ const TermsPage = () => {
                 <h2 className="text-2xl font-semibold mb-4">Disclaimers and Limitations</h2>
                 <p className="mb-4">TO THE FULLEST EXTENT PERMITTED BY LAW:</p>
                 <ul className="list-disc pl-6 mb-4">
-                    <li className="mb-2">THE SERVICE IS PROVIDED "AS IS" WITHOUT ANY WARRANTIES</li>
+                    <li className="mb-2">THE SERVICE IS PROVIDED &quot;AS IS&quot; WITHOUT ANY WARRANTIES</li>
                     <li className="mb-2">WE ARE NOT LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES</li>
                     <li className="mb-2">OUR TOTAL LIABILITY SHALL NOT EXCEED THE GREATER OF $100 OR THE AMOUNT PAID FOR THE SERVICE IN THE PAST SIX MONTHS</li>
                     <li className="mb-2">WE ARE NOT LIABLE FOR ANY THIRD-PARTY SERVICES OR CONTENT</li>
@@ -76,7 +76,7 @@ const TermsPage = () => {
 
             <section className="mb-8">
                 <h2 className="text-2xl font-semibold mb-4">Changes to Terms</h2>
-                <p className="mb-4">We may update these terms at any time. We'll notify you of significant changes through the app or email. Continued use of the Service after changes constitutes acceptance of the updated terms.</p>
+                <p className="mb-4">We may update these terms at any time. We&apos;ll notify you of significant changes through the app or email. Continued use of the Service after changes constitutes acceptance of the updated terms.</p>
             </section>
 
             <section className="mb-8">
