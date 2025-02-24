@@ -3,7 +3,7 @@
 
 export default function BuyMeCoffeeButton() {
     return (
-        <div className="fixed right-[18px] bottom-[18px] z-[9999] transition-transform hover:-translate-y-1">
+        <div className="fixed right-[18px] bottom-[80px] z-[9999] transition-transform hover:-translate-y-1">
             <a
                 href="https://www.buymeacoffee.com/ollolabs"
                 target="_blank"

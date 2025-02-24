@@ -14,6 +14,9 @@ export default function Footer() {
                     </Link>
                 </div>
             </div>
+            <div className="container mt-4">
+                <p className="text-sm text-muted-foreground">For customer support, please reach us at contact@ollo.audio</p>
+            </div>
         </footer>
     );
 }
