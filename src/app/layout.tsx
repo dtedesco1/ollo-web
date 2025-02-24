@@ -21,9 +21,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={inter.className}>
         <main>{children}</main>
+        <BuyMeCoffeeButton />
         <Footer />
         <GoogleAnalytics gaId="G-3CBRHGJCW4" />
-        <BuyMeCoffeeButton />
       </body>
     </html>
   );
